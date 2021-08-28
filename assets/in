@@ -1,0 +1,31 @@
+#!/bin/bash
+set -o errexit
+
+STDIN=$(cat -)
+
+# {
+#   "source": {
+#     "package": "foobar"
+#   },
+#   "version": { "number": "5.6.0" },
+#   "params": {}
+# }
+PACKAGE="$(jq -r '.source.package' <<<"$STDIN")"
+VERSION_TO_GET="$(jq -r '.version.number' <<<"$STDIN")"
+
+# files to be consumed by tasks
+curl "https://pypi.org/pypi/$PACKAGE/$VERSION_TO_GET/json" | jq .info > "$1"/info.json
+
+# metadata to be shown in the get step
+release_url=$(jq --raw-output .release_url < "$1"/info.json)
+
+jq \
+  --raw-output \
+  --arg url "$release_url" \
+'{
+  version: .version,
+  metadata: [
+    { name: "Release URL", "value": $url },
+    { name: "Package", "value": .source.package }
+  ]
+}' <<<"$STDIN"

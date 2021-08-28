@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -o errexit
+
+STDIN=$(cat -)
+
+# {
+#   "source": {
+#     "package": "ansible"
+#   },
+#   "version": { "number": "5.5.3" }
+# }
+PACKAGE="$(jq -r '.source.package' <<<"$STDIN")"
+VERSION_TO_CHECK="$(jq -r '.version.number' <<<"$STDIN")"
+LATEST_VERSION="$(curl "https://pypi.org/pypi/$PACKAGE/json" | jq -r '.releases | keys | last')"
+
+if [ -z "$VERSION_TO_CHECK" ] || [ "$VERSION_TO_CHECK" == "null" ]; then
+  >&2 echo "INFO: Previous version not found"
+  jq -n --arg u "$LATEST_VERSION" '[{number: $u}]'
+else
+  >&2 echo "INFO: Previous version is $VERSION_TO_CHECK"
+  jq -n --arg u "$LATEST_VERSION" --arg o "$VERSION_TO_CHECK" '[{number: $o},{number: $u}]'
+fi

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=$'\n\t'
+
+SCRIPT_PATH=$(dirname "$(realpath -s "$0")")
+
+fly \
+    set-pipeline \
+    --target "$CONCOURSE_TARGET" \
+    --pipeline=pypi-resource \
+    --config "$SCRIPT_PATH/ci/pipeline.yml" \
+    --yaml-var=secrets="$SECRETS"
